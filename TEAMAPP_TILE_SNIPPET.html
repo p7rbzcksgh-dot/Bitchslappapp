@@ -1,0 +1,18 @@
+<!-- TEAMAPP tile snippet for BOMAPP with badge support -->
+<a class="app-tile active" href="bomapp__index.html" aria-label="Open BOMAPP">
+  <span class="thumb-wrap">
+    <img src="bomapp-icon.png" alt="BOMAPP thumbnail">
+    <span class="app-badge" id="bomappBadge" hidden>0</span>
+  </span>
+  <p class="app-number">BOMAPP</p>
+  <p class="app-dept">BOM Builder</p>
+</a>
+<script src="tcg-alert-bridge.js"></script>
+<script>
+  const badge = document.getElementById('bomappBadge');
+  if (badge && window.TCGInternalAlerts) {
+    const count = TCGInternalAlerts.count(a => a.source === 'BOMAPP' && a.status !== 'closed');
+    badge.textContent = count;
+    badge.hidden = count === 0;
+  }
+</script>

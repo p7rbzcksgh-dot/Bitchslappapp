@@ -1,0 +1,2284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BOMAPP">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="bomapp-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>TCG BOM Bitchslap APP</title>
+<meta name="description" content="TCG Machines BOM builder for MRPeasy, Odoo, SOLIDWORKS import, and internal app alerts.">
+
+<style id="bomapp-inline-styles">
+:root{
+  --orange:#ff7a00;
+  --orange2:#ffb15d;
+  --line:rgba(255,122,0,.55);
+  --panel:rgba(8,8,10,.76);
+  --panel2:rgba(18,18,22,.86);
+  --text:#fff;
+  --muted:rgba(255,255,255,.72);
+  --soft:rgba(255,255,255,.45);
+  --green:#73d36a;
+  --red:#ff5b5b;
+  --purple:#a65cff;
+  --steel:#6c7b8a;
+  --shadow:0 20px 60px rgba(0,0,0,.52), inset 0 0 0 1px rgba(255,255,255,.04);
+  --radius:24px;
+}
+*{box-sizing:border-box}
+html{background:#050505;scroll-behavior:smooth}
+body{
+  margin:0;
+  min-height:100svh;
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  background:#050505;
+  overflow-x:hidden;
+}
+.bg-art{
+  position:fixed;
+  inset:0;
+  z-index:-3;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.20),rgba(0,0,0,.82)),
+    url("bomapp-bg-mobile.jpg") center top/cover no-repeat;
+  opacity:.95;
+  filter:saturate(1.1) contrast(1.05);
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:
+    radial-gradient(circle at 30% 4%, rgba(255,122,0,.20), transparent 32%),
+    linear-gradient(180deg,rgba(0,0,0,.20),rgba(0,0,0,.88) 78%);
+}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit}
+button{
+  border:0;
+  min-height:46px;
+  padding:10px 16px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#ffca7a,#ff7a00 58%,#b34900);
+  color:#080808;
+  font-weight:950;
+  letter-spacing:.02em;
+  cursor:pointer;
+  box-shadow:0 10px 20px rgba(0,0,0,.38),0 0 18px rgba(255,122,0,.32),inset 0 1px 0 rgba(255,255,255,.35);
+  touch-action:manipulation;
+}
+button:active{transform:translateY(2px)}
+button.ghost{background:rgba(0,0,0,.38);color:#fff;border:1px solid rgba(255,122,0,.45);box-shadow:none}
+button.small{min-height:36px;padding:7px 12px;font-size:.82rem;box-shadow:none}
+button.steel{background:linear-gradient(180deg,#9faebd,#5d6874);color:#fff}
+button.green{background:linear-gradient(180deg,#b8f29e,#65d66c 65%,#39a142);color:#041009}
+button.red{background:linear-gradient(180deg,#ff8b8b,#ff4d4d 65%,#ad1d1d);color:#fff}
+button.purple{background:linear-gradient(180deg,#d7b5ff,#a65cff 65%,#6a25bf);color:#fff}
+button.orange{background:linear-gradient(180deg,#ffd08e,#ff7a00 62%,#b34900);color:#080808}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:80;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:12px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) clamp(12px,3vw,22px) 10px;
+  border-bottom:1px solid rgba(255,122,0,.45);
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(14px);
+  box-shadow:0 12px 26px rgba(0,0,0,.38);
+}
+.return-link{min-height:38px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,122,0,.12);border:1px solid rgba(255,122,0,.42);color:#ffb15d;font-weight:950;white-space:nowrap}
+.brand-mini{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;font-weight:950;text-transform:uppercase;letter-spacing:.05em;color:#fff;text-align:center}
+.brand-mini img{height:34px;width:auto;filter:drop-shadow(0 0 10px rgba(255,122,0,.32))}
+.brand-mini span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-shell{width:min(1220px,100%);margin:0 auto;padding:clamp(14px,3vw,28px) clamp(14px,4vw,28px) calc(92px + env(safe-area-inset-bottom,0px))}
+.page{display:none}.page.active{display:block}.muted{color:var(--muted)}
+.eyebrow{margin:0 0 7px;color:#ffb15d;text-transform:uppercase;letter-spacing:.24em;font-size:.8rem;font-weight:950}
+.hero-panel{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.75fr);gap:18px;align-items:stretch;margin-bottom:18px}
+.hero-copy,.hero-art-card,.panel,.bom-card,.section-card,.empty-state{
+  background:linear-gradient(145deg,rgba(0,0,0,.70),rgba(18,18,24,.70));
+  border:1px solid rgba(255,122,0,.42);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(12px);
+}
+.hero-copy{padding:clamp(18px,4vw,34px)}
+.hero-copy h1{margin:0;font-family:Impact,Haettenschweiler,"Arial Black",sans-serif;font-size:clamp(3.1rem,11vw,6.7rem);line-height:.83;letter-spacing:.035em;text-transform:uppercase;background:linear-gradient(180deg,#fff,#9a9a9a 55%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 8px 18px #000)}
+.hero-copy h1 span{color:var(--orange);background:linear-gradient(180deg,#ffd08e,#ff7a00 55%,#c94d00);-webkit-background-clip:text;background-clip:text}
+.hero-subtitle{font-size:clamp(1rem,2.2vw,1.22rem);color:var(--muted);max-width:760px;line-height:1.55}
+.dashboard-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+.mega-btn{min-width:min(100%,240px);min-height:64px;font-size:1.12rem}
+.hero-art-card{padding:12px;display:grid;place-items:center;overflow:hidden}
+.hero-art-card img{width:100%;max-height:420px;object-fit:contain;border-radius:20px;filter:drop-shadow(0 0 20px rgba(255,122,0,.32))}
+.status-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.status-pill{display:inline-flex;gap:5px;align-items:center;padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.44);border:1px solid rgba(255,122,0,.28);color:#fff;font-weight:800}
+.status-pill.warn{border-color:rgba(255,91,91,.55)}
+.dashboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.panel{padding:18px}.panel h2{margin:0 0 10px;color:var(--orange);text-transform:uppercase;letter-spacing:.05em}.panel p,.panel li{color:var(--muted);line-height:1.5}
+.page-title{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}
+.page-title h1{font-size:clamp(2rem,7vw,4rem);margin:0;text-transform:uppercase}
+.page-title p{color:var(--muted);max-width:850px}
+.field-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+label{display:grid;gap:6px;color:#fff;font-weight:850;font-size:.85rem}
+input,select,textarea{
+  width:100%;
+  border:0;
+  border-radius:13px;
+  padding:12px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  outline:none;
+}
+input:focus,select:focus,textarea:focus{box-shadow:inset 0 0 0 2px rgba(255,122,0,.78),0 0 18px rgba(255,122,0,.22)}
+textarea{min-height:90px;resize:vertical}
+.button-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.hidden-file{display:none}
+.workspace-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.bom-workspace{display:grid;gap:16px}.empty-state{text-align:center;padding:36px}
+.bom-card{overflow:hidden}
+.bom-header{padding:18px;border-bottom:1px solid rgba(255,122,0,.28);display:grid;gap:12px;background:linear-gradient(90deg,rgba(255,122,0,.12),rgba(0,0,0,.20))}
+.bom-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bom-title-row h2{margin:0;color:#fff}
+.bom-type-pill{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(255,122,0,.14);color:#ffb15d;font-weight:950}
+.bom-fields{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.bom-body{padding:16px;display:grid;gap:14px}
+.section-card{padding:14px;background:rgba(0,0,0,.42)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.section-head-left{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.section-title-input{min-width:220px;font-weight:900}
+.section-category-select{width:180px}
+.part-table{display:grid;gap:8px}
+.part-row{display:grid;grid-template-columns:1fr 1.4fr .45fr .75fr 1fr 40px;gap:8px;align-items:end;background:rgba(0,0,0,.30);padding:9px;border-radius:14px}
+.part-row label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.62)}
+.icon-remove{min-height:38px;width:38px;border-radius:50%;padding:0;background:rgba(255,255,255,.09);color:#fff;box-shadow:none}
+.subsections{display:grid;gap:10px;margin-top:12px;padding-left:14px;border-left:2px solid rgba(255,122,0,.25)}
+.validation-list{margin:0;padding-left:20px}.validation-list li{margin:6px 0}
+.draft-list,.alert-list,.inventory-results{display:grid;gap:10px;max-height:520px;overflow:auto}
+.draft-card,.alert-card,.inventory-card{padding:12px;border-radius:16px;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.10)}
+.alert-card.urgent{border-color:rgba(255,91,91,.75);box-shadow:0 0 16px rgba(255,91,91,.18)}
+.alert-card.required{border-color:rgba(255,122,0,.75)}
+.tiny-note{font-size:.82rem;color:rgba(255,255,255,.62)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(12px);opacity:0;pointer-events:none;z-index:999;padding:12px 16px;border-radius:999px;background:rgba(0,0,0,.90);border:1px solid rgba(255,122,0,.54);color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.50);transition:.22s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:980px){.hero-panel,.dashboard-grid{grid-template-columns:1fr}.field-grid,.bom-fields{grid-template-columns:1fr 1fr}.part-row{grid-template-columns:1fr 1fr .6fr}.part-row label:nth-child(4),.part-row label:nth-child(5){grid-column:span 1}.icon-remove{justify-self:end}}
+@media(max-width:620px){.topbar{grid-template-columns:1fr auto}.return-link{display:none}.brand-mini{justify-content:flex-start}.brand-mini span{font-size:.75rem}.field-grid,.bom-fields,.part-row{grid-template-columns:1fr}.page-title{display:grid}.mega-btn{width:100%}.workspace-toolbar button{width:100%}.section-head{display:grid}.section-category-select,.section-title-input{width:100%;min-width:0}.hero-copy h1{font-size:3.25rem}.app-shell{padding-left:12px;padding-right:12px}}
+@media(orientation:landscape) and (max-height:560px){.bg-art{background-image:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.88)),url("bomapp-bg-desktop.jpg")}.hero-panel{grid-template-columns:1.2fr .8fr}.hero-copy h1{font-size:3rem}.hero-art-card img{max-height:260px}.dashboard-grid{grid-template-columns:repeat(3,1fr)}}
+@media print{.topbar,.workspace-toolbar,.button-row,.toast{display:none!important}body{background:#fff;color:#111}.bg-art,body::after{display:none}.panel,.bom-card,.section-card{box-shadow:none;border:1px solid #aaa;background:#fff;color:#111}input,select,textarea{background:#fff;color:#111;border:1px solid #aaa}}
+
+/* v02 responsive dashboard polish: use the app thumbnail as the background art */
+.bg-art{
+  opacity:1!important;
+  filter:none!important;
+  background:#050505!important;
+}
+.bg-art::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url("bomapp-thumbnail.png") center calc(74px + env(safe-area-inset-top,0px)) / min(86vw, 720px) auto no-repeat;
+  opacity:.48;
+  filter:saturate(1.12) contrast(1.08) drop-shadow(0 0 30px rgba(255,122,0,.28));
+}
+.bg-art::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(255,122,0,.16), transparent 40%),
+    linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.48) 42%, rgba(0,0,0,.92) 100%);
+}
+body::after{
+  background:
+    radial-gradient(circle at 50% 5%, rgba(255,122,0,.14), transparent 38%),
+    linear-gradient(180deg,rgba(0,0,0,.14),rgba(0,0,0,.86) 82%)!important;
+}
+
+/* Dashboard now uses the thumbnail as background, so avoid duplicate large art card */
+#page-dashboard .hero-panel{
+  min-height:calc(100svh - 112px);
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  margin-bottom:18px;
+}
+#page-dashboard .hero-copy{
+  width:min(760px, 100%);
+  background:linear-gradient(145deg,rgba(0,0,0,.72),rgba(18,18,24,.62));
+}
+#page-dashboard .hero-art-card{
+  display:none!important;
+}
+#page-dashboard .dashboard-grid{
+  margin-top:18px;
+}
+.hero-copy,.panel,.bom-card,.section-card,.empty-state{
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+}
+.dashboard-actions .mega-btn{
+  min-width:min(100%,260px);
+}
+button,.mega-btn,.panel,.bom-card,.section-card,.hero-copy{
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+button:hover{filter:brightness(1.05)}
+button:active{transform:translateY(1px) scale(.99)}
+
+/* Desktop / large landscape: thumbnail sits to the right, controls sit left */
+@media (min-width:980px) and (orientation:landscape){
+  .bg-art::before{
+    background-size:min(44vw, 680px) auto;
+    background-position:right 5vw center;
+    opacity:.58;
+  }
+  .bg-art::after{
+    background:
+      linear-gradient(to right, rgba(0,0,0,.08) 0%, rgba(0,0,0,.20) 38%, rgba(0,0,0,.74) 75%, rgba(0,0,0,.90) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.84));
+  }
+  #page-dashboard .hero-copy{
+    max-width:690px;
+  }
+  #page-dashboard .hero-panel{
+    justify-content:flex-start;
+    align-items:center;
+    padding-right:44vw;
+  }
+}
+
+/* Tablets: centered art, centered controls */
+@media (min-width:621px) and (max-width:979px){
+  .bg-art::before{
+    background-size:min(72vw, 680px) auto;
+    background-position:center calc(80px + env(safe-area-inset-top,0px));
+    opacity:.45;
+  }
+  #page-dashboard .hero-panel{
+    min-height:auto;
+    padding-top:min(54vw, 500px);
+    align-items:flex-start;
+  }
+  #page-dashboard .hero-copy{
+    margin:0 auto;
+  }
+}
+
+/* Phones portrait: thumbnail top, controls directly below it */
+@media (max-width:620px) and (orientation:portrait){
+  .bg-art::before{
+    background-size:min(94vw, 520px) auto;
+    background-position:center calc(66px + env(safe-area-inset-top,0px));
+    opacity:.52;
+  }
+  #page-dashboard .hero-panel{
+    min-height:auto;
+    padding-top:min(96vw, 520px);
+    align-items:flex-start;
+  }
+  #page-dashboard .hero-copy{
+    width:100%;
+    padding:16px;
+    border-radius:20px;
+  }
+  #page-dashboard .hero-copy h1{
+    font-size:clamp(2.45rem, 15vw, 3.35rem);
+  }
+  #page-dashboard .hero-subtitle{
+    font-size:.95rem;
+  }
+  #page-dashboard .status-row{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+}
+
+/* Phones/tablets landscape: thumbnail right, dashboard left, no weird cropping */
+@media (orientation:landscape) and (max-height:620px){
+  .app-shell{
+    padding-top:10px;
+  }
+  .bg-art::before{
+    background-size:auto min(88svh, 620px);
+    background-position:right 3vw center;
+    opacity:.62;
+  }
+  .bg-art::after{
+    background:
+      linear-gradient(to right, rgba(0,0,0,.10), rgba(0,0,0,.38) 46%, rgba(0,0,0,.78) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,.12), rgba(0,0,0,.82));
+  }
+  #page-dashboard .hero-panel{
+    min-height:calc(100svh - 76px);
+    padding-top:0;
+    padding-right:44vw;
+    justify-content:flex-start;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  #page-dashboard .hero-copy{
+    max-width:min(56vw, 620px);
+    padding:14px;
+    border-radius:18px;
+  }
+  #page-dashboard .hero-copy h1{
+    font-size:clamp(2.2rem, 6vw, 3.2rem);
+  }
+  #page-dashboard .hero-subtitle{
+    font-size:.86rem;
+    line-height:1.35;
+  }
+  #page-dashboard .dashboard-actions{
+    margin-top:10px;
+  }
+  #page-dashboard .mega-btn{
+    min-height:48px;
+    min-width:200px;
+  }
+  #page-dashboard .status-row{
+    margin-top:10px;
+  }
+  #page-dashboard .dashboard-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+  }
+  #page-dashboard .panel{
+    padding:12px;
+  }
+  #page-dashboard .panel p,
+  #page-dashboard .panel li{
+    font-size:.82rem;
+  }
+}
+
+/* Very narrow / weird aspect ratios */
+@media (max-width:380px){
+  .brand-mini span{font-size:.68rem}
+  #page-dashboard .hero-copy h1{font-size:2.35rem}
+  .dashboard-actions .mega-btn{min-height:56px}
+}
+@media (min-aspect-ratio: 2/1){
+  .bg-art::before{
+    background-size:auto 82svh;
+    background-position:right 4vw center;
+  }
+  #page-dashboard .hero-panel{
+    padding-right:42vw;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+/* v03 SOP WIZARD-style dashboard rebrand */
+body.dashboard-mode{
+  height:100svh;
+  min-height:100svh;
+  overflow:hidden;
+  background:#050505;
+}
+body.dashboard-mode .topbar{
+  display:none;
+}
+body.dashboard-mode .app-shell{
+  width:100%;
+  max-width:none;
+  min-height:100svh;
+  padding:0;
+}
+body.dashboard-mode .page.active{
+  min-height:100svh;
+}
+body.dashboard-mode .bg-art{
+  background:#000!important;
+  opacity:1!important;
+}
+body.dashboard-mode .bg-art::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url("bomapp-thumbnail.png") center 10% / min(92vw, 840px) auto no-repeat;
+  opacity:.86;
+  filter:saturate(1.10) contrast(1.06) drop-shadow(0 0 34px rgba(255,122,0,.30));
+}
+body.dashboard-mode .bg-art::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(0,0,0,0) 0 32%, rgba(0,0,0,.30) 62%, rgba(0,0,0,.78) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,.24), rgba(0,0,0,.08) 36%, rgba(0,0,0,.50) 67%, rgba(0,0,0,.93));
+}
+body.dashboard-mode::after{
+  display:none;
+}
+
+/* Dashboard stage */
+body.dashboard-mode #page-dashboard{
+  height:100svh;
+  max-height:100svh;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:1fr;
+}
+body.dashboard-mode #page-dashboard .hero-panel{
+  height:100svh;
+  min-height:100svh;
+  margin:0;
+  padding:
+    calc(18px + env(safe-area-inset-top,0px))
+    max(18px, env(safe-area-inset-right,0px))
+    calc(28px + env(safe-area-inset-bottom,0px))
+    max(18px, env(safe-area-inset-left,0px));
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+}
+body.dashboard-mode #page-dashboard .hero-copy{
+  width:min(92vw, 720px);
+  padding:0;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  backdrop-filter:none;
+  text-align:center;
+}
+.dashboard-brand-lockup{
+  display:grid;
+  justify-items:center;
+  text-align:center;
+  gap:5px;
+  margin-bottom:clamp(12px,2svh,18px);
+  text-shadow:0 5px 20px rgba(0,0,0,.9);
+}
+.dashboard-brand-lockup img{
+  width:clamp(84px,18vw,142px);
+  height:auto;
+  filter:drop-shadow(0 0 14px rgba(255,122,0,.34));
+}
+.dashboard-brand-lockup .eyebrow{
+  margin:0;
+  color:var(--orange2);
+  letter-spacing:.34em;
+  font-weight:950;
+}
+body.dashboard-mode .dashboard-brand-lockup h1{
+  margin:0;
+  font-family:Impact,Haettenschweiler,"Arial Black",sans-serif;
+  line-height:.82;
+  letter-spacing:.045em;
+  text-transform:uppercase;
+  font-size:clamp(2.65rem,10vw,5.65rem);
+  background:linear-gradient(180deg,#fff 6%,#e6e6e6 42%,#8d8d8d 63%,#fff 94%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  filter:drop-shadow(0 8px 22px rgba(0,0,0,.92));
+}
+body.dashboard-mode .dashboard-brand-lockup h1 span{
+  background:linear-gradient(180deg,#ffd39a 0%,#ff7a00 48%,#b44700 82%,#ffb15d 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.dashboard-subtitle{
+  margin:2px 0 0;
+  color:var(--orange);
+  font-weight:950;
+  letter-spacing:.38em;
+  text-transform:uppercase;
+  font-size:clamp(.70rem,2vw,1.05rem);
+}
+.kaizen-line{
+  margin:4px 0 0;
+  color:#ffb15d;
+  font-family:"Bradley Hand","Segoe Script","Brush Script MT",cursive;
+  font-style:italic;
+  font-size:clamp(1rem,3vw,1.42rem);
+  text-shadow:0 0 16px rgba(255,122,0,.35),0 3px 12px #000;
+}
+body.dashboard-mode #page-dashboard .hero-subtitle{
+  display:none;
+}
+body.dashboard-mode #page-dashboard .dashboard-actions{
+  width:min(92vw, 720px);
+  margin:0 auto;
+  display:grid;
+  gap:12px;
+}
+body.dashboard-mode #page-dashboard .mega-btn{
+  width:100%;
+  min-height:clamp(62px,8.4svh,84px);
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(1.25rem,4.4vw,2.05rem);
+  text-transform:none;
+  color:#fff;
+  text-shadow:0 4px 18px #000;
+  background:
+    radial-gradient(circle at 14% 20%, rgba(255,122,0,.28), transparent 44%),
+    linear-gradient(90deg, rgba(0,0,0,.76), rgba(16,16,18,.92), rgba(0,0,0,.76));
+  box-shadow:
+    0 0 22px rgba(255,122,0,.68),
+    0 16px 42px rgba(0,0,0,.66),
+    inset 0 0 0 1px rgba(255,122,0,.48),
+    inset 0 0 28px rgba(255,122,0,.16);
+  border:1px solid rgba(255,122,0,.40);
+}
+body.dashboard-mode #page-dashboard .mega-btn::before{
+  display:inline-grid;
+  place-items:center;
+  margin-right:14px;
+  width:clamp(34px,6.2vw,52px);
+  height:clamp(34px,6.2vw,52px);
+  border-radius:50%;
+  border:3px solid var(--orange);
+  color:var(--orange);
+  font-size:.95em;
+  line-height:1;
+  box-shadow:0 0 16px rgba(255,122,0,.55);
+}
+body.dashboard-mode #page-dashboard .mega-btn.orange::before{
+  content:"+";
+}
+body.dashboard-mode #page-dashboard .mega-btn.steel::before{
+  content:"↻";
+}
+body.dashboard-mode #page-dashboard .mega-btn:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.08);
+}
+body.dashboard-mode #page-dashboard .status-row{
+  width:min(92vw,720px);
+  margin:14px auto 0;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+body.dashboard-mode #page-dashboard .status-pill{
+  justify-content:center;
+  min-height:34px;
+  font-size:.78rem;
+  background:rgba(0,0,0,.46);
+  border-color:rgba(255,122,0,.34);
+}
+body.dashboard-mode #page-dashboard .dashboard-grid{
+  display:none;
+}
+
+/* Dashboard portrait placement: keep the character art visible and buttons in the lower sweet spot */
+@media (orientation:portrait){
+  body.dashboard-mode .bg-art::before{
+    background-size:min(104vw, 720px) auto;
+    background-position:center calc(12px + env(safe-area-inset-top,0px));
+  }
+  body.dashboard-mode #page-dashboard .hero-panel{
+    align-items:flex-end;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  }
+  body.dashboard-mode #page-dashboard .hero-copy{
+    transform:translateY(0);
+  }
+}
+@media (orientation:portrait) and (max-height:760px){
+  .dashboard-brand-lockup img{
+    width:78px;
+  }
+  body.dashboard-mode .dashboard-brand-lockup h1{
+    font-size:2.55rem;
+  }
+  .dashboard-subtitle{font-size:.62rem}
+  .kaizen-line{font-size:.92rem}
+  body.dashboard-mode #page-dashboard .dashboard-actions{gap:9px}
+  body.dashboard-mode #page-dashboard .mega-btn{
+    min-height:56px;
+    font-size:1.18rem;
+  }
+  body.dashboard-mode #page-dashboard .status-row{
+    display:none;
+  }
+}
+@media (orientation:portrait) and (min-height:880px){
+  body.dashboard-mode .bg-art::before{
+    background-size:min(104vw, 790px) auto;
+    background-position:center calc(18px + env(safe-area-inset-top,0px));
+  }
+  body.dashboard-mode #page-dashboard .hero-panel{
+    padding-bottom:calc(42px + env(safe-area-inset-bottom,0px));
+  }
+}
+
+/* Landscape: SOP Wizard style split view, art left, controls right */
+@media (orientation:landscape){
+  body.dashboard-mode .bg-art::before{
+    background-size:auto min(94svh, 760px);
+    background-position:left 4vw center;
+    opacity:.86;
+  }
+  body.dashboard-mode .bg-art::after{
+    background:
+      linear-gradient(to right, rgba(0,0,0,.04) 0%, rgba(0,0,0,.08) 38%, rgba(0,0,0,.54) 62%, rgba(0,0,0,.92) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,.78));
+  }
+  body.dashboard-mode #page-dashboard .hero-panel{
+    align-items:center;
+    justify-content:flex-end;
+    padding:
+      max(10px, env(safe-area-inset-top,0px))
+      max(20px, env(safe-area-inset-right,0px))
+      max(10px, env(safe-area-inset-bottom,0px))
+      max(20px, env(safe-area-inset-left,0px));
+  }
+  body.dashboard-mode #page-dashboard .hero-copy{
+    width:min(48vw, 610px);
+  }
+  .dashboard-brand-lockup{
+    margin-bottom:10px;
+  }
+  .dashboard-brand-lockup img{
+    width:clamp(64px,9vw,100px);
+  }
+  body.dashboard-mode .dashboard-brand-lockup h1{
+    font-size:clamp(2.2rem,5.2vw,4.2rem);
+  }
+  .dashboard-subtitle{font-size:clamp(.58rem,1.2vw,.86rem)}
+  .kaizen-line{font-size:clamp(.86rem,2vw,1.18rem)}
+  body.dashboard-mode #page-dashboard .mega-btn{
+    min-height:clamp(50px,14svh,72px);
+    font-size:clamp(1.02rem,2.6vw,1.55rem);
+  }
+  body.dashboard-mode #page-dashboard .status-row{
+    grid-template-columns:1fr;
+    gap:6px;
+    margin-top:10px;
+  }
+}
+
+/* Very short landscape phones */
+@media (orientation:landscape) and (max-height:420px){
+  body.dashboard-mode .bg-art::before{
+    background-size:auto min(90svh, 520px);
+    background-position:left 2vw center;
+  }
+  body.dashboard-mode #page-dashboard .hero-copy{
+    width:min(50vw, 520px);
+  }
+  .dashboard-brand-lockup{
+    gap:2px;
+    margin-bottom:7px;
+  }
+  .dashboard-brand-lockup img{display:none}
+  body.dashboard-mode .dashboard-brand-lockup h1{
+    font-size:clamp(1.85rem,4.6vw,2.75rem);
+  }
+  .kaizen-line{display:none}
+  body.dashboard-mode #page-dashboard .dashboard-actions{
+    gap:7px;
+  }
+  body.dashboard-mode #page-dashboard .mega-btn{
+    min-height:44px;
+    font-size:.98rem;
+  }
+  body.dashboard-mode #page-dashboard .mega-btn::before{
+    width:28px;
+    height:28px;
+    font-size:.85rem;
+    border-width:2px;
+  }
+  body.dashboard-mode #page-dashboard .status-row{
+    display:none;
+  }
+}
+
+/* Make non-dashboard pages keep normal scrolling and clean responsive data-entry UX */
+body:not(.dashboard-mode){
+  overflow-x:hidden;
+}
+body:not(.dashboard-mode) .bg-art::before{
+  background-size:min(52vw, 620px) auto;
+  background-position:right 2vw top 86px;
+  opacity:.18;
+}
+body:not(.dashboard-mode) .bg-art::after{
+  background:linear-gradient(180deg,rgba(0,0,0,.38),rgba(0,0,0,.90));
+}
+
+/* v04 FONT STYLING ONLY — modern / cleaner / more premium */
+body.font-v4{
+  font-family:
+    "SF Pro Display",
+    "Aptos Display",
+    "Inter",
+    "Segoe UI Variable Display",
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+  font-feature-settings:"kern" 1, "liga" 1;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:geometricPrecision;
+}
+
+/* Replace the old chunky Impact look with a modern industrial display style */
+body.font-v4 .dashboard-brand-lockup h1,
+body.font-v4 .hero-copy h1,
+body.font-v4 .page-title h1{
+  font-family:
+    "Arial Black",
+    "Aptos Display",
+    "SF Pro Display",
+    "Segoe UI Variable Display",
+    "Segoe UI",
+    sans-serif!important;
+  font-weight:950!important;
+  letter-spacing:-0.045em!important;
+  line-height:.86!important;
+  text-transform:uppercase;
+}
+
+/* Dashboard title: sleeker, tighter, less goofy */
+body.font-v4.dashboard-mode .dashboard-brand-lockup h1{
+  font-size:clamp(2.35rem, 8.8vw, 5.2rem)!important;
+  background:linear-gradient(180deg,#ffffff 0%,#d9d9d9 44%,#787878 62%,#ffffff 100%)!important;
+  -webkit-background-clip:text!important;
+  background-clip:text!important;
+  color:transparent!important;
+  filter:drop-shadow(0 8px 22px rgba(0,0,0,.92));
+}
+body.font-v4.dashboard-mode .dashboard-brand-lockup h1 span{
+  font-weight:950!important;
+  letter-spacing:-0.055em!important;
+  background:linear-gradient(180deg,#ffd6a2 0%,#ff8a19 42%,#a83d00 76%,#ffb15d 100%)!important;
+  -webkit-background-clip:text!important;
+  background-clip:text!important;
+  color:transparent!important;
+}
+
+/* Make supporting typography feel like the SOP Wizard / TEAMAPP family */
+body.font-v4 .eyebrow,
+body.font-v4 .dashboard-subtitle,
+body.font-v4 .brand-mini span,
+body.font-v4 .status-pill,
+body.font-v4 label,
+body.font-v4 .bom-type-pill{
+  font-family:
+    "SF Pro Text",
+    "Aptos",
+    "Inter",
+    "Segoe UI",
+    Arial,
+    sans-serif!important;
+  font-weight:900!important;
+  letter-spacing:.16em!important;
+}
+
+body.font-v4 .dashboard-subtitle{
+  letter-spacing:.42em!important;
+  font-size:clamp(.62rem, 1.55vw, .95rem)!important;
+}
+body.font-v4 .eyebrow{
+  letter-spacing:.28em!important;
+}
+body.font-v4 .kaizen-line{
+  font-family:
+    "SF Pro Display",
+    "Aptos Display",
+    "Inter",
+    "Segoe UI",
+    Arial,
+    sans-serif!important;
+  font-style:normal!important;
+  font-weight:750!important;
+  letter-spacing:.08em!important;
+  text-transform:uppercase;
+  font-size:clamp(.78rem, 1.75vw, 1.08rem)!important;
+  color:#ffb15d!important;
+}
+
+/* Button typography: clean, bold, app-like */
+body.font-v4 button,
+body.font-v4 .mega-btn{
+  font-family:
+    "SF Pro Display",
+    "Aptos Display",
+    "Inter",
+    "Segoe UI",
+    Arial,
+    sans-serif!important;
+  font-weight:950!important;
+  letter-spacing:.015em!important;
+}
+body.font-v4.dashboard-mode #page-dashboard .mega-btn{
+  font-size:clamp(1.08rem, 3.5vw, 1.68rem)!important;
+  text-transform:uppercase!important;
+  letter-spacing:.035em!important;
+}
+body.font-v4.dashboard-mode #page-dashboard .mega-btn::before{
+  font-family:"Segoe UI", Arial, sans-serif!important;
+  font-weight:900!important;
+}
+
+/* Panels/data-entry pages: modern headings and readable body text */
+body.font-v4 .panel h2,
+body.font-v4 .bom-title-row h2,
+body.font-v4 .section-head input.section-title-input{
+  font-family:
+    "SF Pro Display",
+    "Aptos Display",
+    "Inter",
+    "Segoe UI",
+    Arial,
+    sans-serif!important;
+  font-weight:900!important;
+  letter-spacing:-.015em!important;
+}
+body.font-v4 .panel p,
+body.font-v4 .panel li,
+body.font-v4 input,
+body.font-v4 select,
+body.font-v4 textarea{
+  font-family:
+    "SF Pro Text",
+    "Aptos",
+    "Inter",
+    "Segoe UI",
+    Arial,
+    sans-serif!important;
+}
+
+/* Short landscape and phone adjustments */
+@media (orientation:landscape) and (max-height:420px){
+  body.font-v4.dashboard-mode .dashboard-brand-lockup h1{
+    font-size:clamp(1.78rem,4.2vw,2.55rem)!important;
+  }
+  body.font-v4 .dashboard-subtitle{
+    letter-spacing:.24em!important;
+  }
+}
+@media (max-width:620px) and (orientation:portrait){
+  body.font-v4.dashboard-mode .dashboard-brand-lockup h1{
+    font-size:clamp(2.2rem, 12.6vw, 3.15rem)!important;
+    letter-spacing:-.055em!important;
+  }
+  body.font-v4.dashboard-mode #page-dashboard .mega-btn{
+    font-size:1.05rem!important;
+  }
+}
+
+/* v05 clean dashboard rework based on redline:
+   remove crossed-out lockup/panel, keep thumbnail background, two main buttons + BOM alert button */
+body.clean-v5.dashboard-mode{
+  height:100svh;
+  min-height:100svh;
+  overflow:hidden;
+}
+body.clean-v5.dashboard-mode .topbar{
+  display:none!important;
+}
+body.clean-v5.dashboard-mode .app-shell{
+  width:100%;
+  max-width:none;
+  min-height:100svh;
+  padding:0!important;
+}
+body.clean-v5.dashboard-mode .page.active{
+  min-height:100svh;
+}
+body.clean-v5.dashboard-mode .bg-art{
+  background:#050505!important;
+  opacity:1!important;
+  filter:none!important;
+}
+body.clean-v5.dashboard-mode .bg-art::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url("bomapp-thumbnail.png") right 4vw center / min(58vw, 780px) auto no-repeat;
+  opacity:.72;
+  filter:saturate(1.08) contrast(1.06) drop-shadow(0 0 34px rgba(255,122,0,.28));
+}
+body.clean-v5.dashboard-mode .bg-art::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(to right, rgba(0,0,0,.06) 0%, rgba(0,0,0,.28) 38%, rgba(0,0,0,.62) 72%, rgba(0,0,0,.88) 100%),
+    radial-gradient(circle at 78% 45%, rgba(255,122,0,.10), transparent 38%),
+    linear-gradient(to bottom, rgba(0,0,0,.12), rgba(0,0,0,.86));
+}
+body.clean-v5.dashboard-mode::after{
+  display:none!important;
+}
+.clean-dashboard-stage{
+  height:100svh;
+  min-height:100svh;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding:
+    calc(20px + env(safe-area-inset-top,0px))
+    max(22px, env(safe-area-inset-right,0px))
+    calc(22px + env(safe-area-inset-bottom,0px))
+    max(22px, env(safe-area-inset-left,0px));
+}
+.clean-dashboard-content{
+  width:min(48vw, 640px);
+  min-width:420px;
+  display:grid;
+  gap:18px;
+  margin-left:2vw;
+  transform:translateY(2svh);
+}
+.clean-brand{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-height:60px;
+}
+.clean-brand img{
+  width:clamp(100px, 13vw, 168px);
+  height:auto;
+  filter:drop-shadow(0 0 14px rgba(255,122,0,.32));
+}
+.clean-brand span{
+  color:var(--orange2);
+  font-weight:950;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  font-size:.86rem;
+  opacity:.92;
+}
+.clean-dashboard-actions{
+  display:grid;
+  gap:16px;
+}
+.dash-action{
+  width:100%;
+  min-height:74px;
+  border-radius:999px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:18px;
+  padding:10px 22px;
+  color:#fff!important;
+  text-align:left;
+  background:
+    radial-gradient(circle at 13% 20%, rgba(255,122,0,.22), transparent 42%),
+    linear-gradient(90deg, rgba(0,0,0,.84), rgba(14,14,16,.88), rgba(0,0,0,.78));
+  border:1px solid rgba(255,122,0,.58);
+  box-shadow:
+    0 0 20px rgba(255,122,0,.54),
+    0 18px 42px rgba(0,0,0,.62),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.dash-action.primary{
+  min-height:82px;
+  box-shadow:
+    0 0 28px rgba(255,122,0,.72),
+    0 18px 48px rgba(0,0,0,.65),
+    inset 0 0 0 1px rgba(255,122,0,.22);
+}
+.dash-action:hover,
+.dash-alert:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.08);
+}
+.dash-icon{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  color:var(--orange);
+  border:3px solid var(--orange);
+  font-size:1.55rem;
+  line-height:1;
+  font-weight:950;
+  box-shadow:0 0 16px rgba(255,122,0,.52);
+}
+.dash-copy{
+  display:grid;
+  gap:3px;
+}
+.dash-copy strong{
+  font-size:clamp(1.34rem, 2.5vw, 2.05rem);
+  line-height:1;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.dash-copy small{
+  color:rgba(255,255,255,.76);
+  font-size:clamp(.76rem, 1.1vw, .95rem);
+  font-weight:650;
+  letter-spacing:.01em;
+}
+.dash-chev{
+  color:var(--orange);
+  font-size:2.45rem;
+  line-height:1;
+  filter:drop-shadow(0 0 10px rgba(255,122,0,.55));
+}
+.dash-alert{
+  width:100%;
+  min-height:58px;
+  border-radius:22px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  gap:14px;
+  padding:10px 18px;
+  color:#fff!important;
+  text-align:left;
+  background:
+    radial-gradient(circle at 8% 30%, rgba(255,67,67,.20), transparent 42%),
+    linear-gradient(90deg, rgba(52,0,0,.78), rgba(15,15,16,.86), rgba(0,0,0,.78));
+  border:1px solid rgba(255,91,91,.68);
+  box-shadow:
+    0 0 20px rgba(255,64,64,.28),
+    0 12px 34px rgba(0,0,0,.58),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.dash-alert .alert-dot{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:rgba(255,91,91,.16);
+  border:2px solid #ff5b5b;
+  color:#ff5b5b;
+  font-weight:950;
+  box-shadow:0 0 14px rgba(255,91,91,.42);
+}
+.dash-alert strong{
+  display:block;
+  font-size:1rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.dash-alert small{
+  display:block;
+  margin-top:2px;
+  color:rgba(255,255,255,.68);
+  font-size:.76rem;
+}
+
+/* Hide old dashboard bits if any remain */
+body.clean-v5.dashboard-mode .dashboard-brand-lockup,
+body.clean-v5.dashboard-mode .hero-subtitle,
+body.clean-v5.dashboard-mode .status-row,
+body.clean-v5.dashboard-mode .dashboard-grid,
+body.clean-v5.dashboard-mode .hero-art-card{
+  display:none!important;
+}
+
+/* Tablet/portrait: art on top, buttons below, still clean */
+@media (orientation:portrait){
+  body.clean-v5.dashboard-mode .bg-art::before{
+    background-size:min(105vw, 760px) auto;
+    background-position:center calc(14px + env(safe-area-inset-top,0px));
+    opacity:.82;
+  }
+  body.clean-v5.dashboard-mode .bg-art::after{
+    background:
+      radial-gradient(circle at 50% 30%, rgba(0,0,0,0) 0 30%, rgba(0,0,0,.22) 60%, rgba(0,0,0,.78) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.42) 48%, rgba(0,0,0,.94));
+  }
+  .clean-dashboard-stage{
+    align-items:flex-end;
+    justify-content:center;
+    padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  }
+  .clean-dashboard-content{
+    width:min(92vw, 620px);
+    min-width:0;
+    margin-left:0;
+    transform:none;
+    gap:12px;
+  }
+  .clean-brand{
+    justify-content:center;
+    min-height:44px;
+  }
+  .clean-brand img{
+    width:clamp(86px, 24vw, 130px);
+  }
+  .clean-brand span{
+    display:none;
+  }
+  .dash-action{
+    min-height:64px;
+    gap:13px;
+    padding:9px 16px;
+  }
+  .dash-action.primary{
+    min-height:70px;
+  }
+  .dash-icon{
+    width:39px;
+    height:39px;
+    font-size:1.35rem;
+  }
+  .dash-copy strong{
+    font-size:clamp(1.08rem, 5.3vw, 1.55rem);
+  }
+  .dash-copy small{
+    font-size:.73rem;
+  }
+  .dash-chev{
+    font-size:2rem;
+  }
+  .dash-alert{
+    min-height:52px;
+    border-radius:20px;
+  }
+}
+
+/* Short phones: keep everything on one screen */
+@media (orientation:portrait) and (max-height:760px){
+  body.clean-v5.dashboard-mode .bg-art::before{
+    background-size:min(96vw, 620px) auto;
+    background-position:center calc(6px + env(safe-area-inset-top,0px));
+  }
+  .clean-dashboard-stage{
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  }
+  .clean-dashboard-content{
+    gap:9px;
+  }
+  .clean-brand{display:none}
+  .dash-action{
+    min-height:58px;
+  }
+  .dash-action.primary{
+    min-height:62px;
+  }
+  .dash-alert{
+    min-height:48px;
+  }
+  .dash-alert small{
+    display:none;
+  }
+}
+
+/* Landscape: art right, buttons left */
+@media (orientation:landscape){
+  body.clean-v5.dashboard-mode .bg-art::before{
+    background-size:auto min(90svh, 720px);
+    background-position:right 4vw center;
+    opacity:.78;
+  }
+  .clean-dashboard-stage{
+    align-items:center;
+    justify-content:flex-start;
+    padding-left:max(28px, env(safe-area-inset-left,0px));
+  }
+  .clean-dashboard-content{
+    width:min(48vw, 640px);
+    min-width:380px;
+  }
+}
+@media (orientation:landscape) and (max-height:430px){
+  body.clean-v5.dashboard-mode .bg-art::before{
+    background-size:auto min(86svh, 520px);
+    background-position:right 2vw center;
+  }
+  .clean-dashboard-content{
+    width:min(50vw, 540px);
+    min-width:330px;
+    gap:8px;
+  }
+  .clean-brand{
+    display:none;
+  }
+  .dash-action{
+    min-height:48px;
+    padding:7px 14px;
+  }
+  .dash-action.primary{
+    min-height:52px;
+  }
+  .dash-icon{
+    width:32px;
+    height:32px;
+    font-size:1.1rem;
+    border-width:2px;
+  }
+  .dash-copy strong{
+    font-size:1rem;
+  }
+  .dash-copy small{
+    font-size:.62rem;
+  }
+  .dash-alert{
+    min-height:42px;
+    border-radius:18px;
+  }
+  .dash-alert small{
+    display:none;
+  }
+}
+
+/* Ensure non-dashboard pages remain normal */
+body:not(.dashboard-mode) .clean-dashboard-stage{
+  display:none;
+}
+
+/* v07 hard fix: GitHub-safe background + neutral alert button unless update is pending */
+body.clean-v5.dashboard-mode .bg-art::before{
+  background-image:url("bomapp-thumbnail.png")!important;
+  background-repeat:no-repeat!important;
+}
+.dash-alert{
+  background:
+    radial-gradient(circle at 8% 30%, rgba(255,122,0,.08), transparent 42%),
+    linear-gradient(90deg, rgba(0,0,0,.78), rgba(15,15,16,.86), rgba(0,0,0,.78))!important;
+  border:1px solid rgba(255,122,0,.38)!important;
+  box-shadow:
+    0 0 12px rgba(255,122,0,.14),
+    0 12px 34px rgba(0,0,0,.50),
+    inset 0 0 0 1px rgba(255,255,255,.04)!important;
+}
+.dash-alert .alert-dot{
+  background:rgba(255,122,0,.10)!important;
+  border-color:rgba(255,122,0,.68)!important;
+  color:var(--orange)!important;
+  box-shadow:0 0 10px rgba(255,122,0,.20)!important;
+}
+.dash-alert.has-alert{
+  background:
+    radial-gradient(circle at 8% 30%, rgba(255,67,67,.26), transparent 42%),
+    linear-gradient(90deg, rgba(52,0,0,.82), rgba(15,15,16,.88), rgba(0,0,0,.78))!important;
+  border-color:rgba(255,91,91,.78)!important;
+  box-shadow:
+    0 0 28px rgba(255,64,64,.55),
+    0 12px 34px rgba(0,0,0,.58),
+    inset 0 0 0 1px rgba(255,255,255,.06)!important;
+}
+.dash-alert.has-alert .alert-dot{
+  background:rgba(255,91,91,.20)!important;
+  border-color:#ff5b5b!important;
+  color:#ff5b5b!important;
+  box-shadow:0 0 18px rgba(255,91,91,.55)!important;
+}
+
+</style>
+</head>
+<body class="dashboard-mode font-v4 clean-v5">
+<div class="bg-art" aria-hidden="true"></div>
+<header class="topbar">
+  <a class="return-link" href="index.html" data-nav="dashboard">BOMAPP</a>
+  <div class="brand-mini">
+    <img src="tcg-logo-transparent.png" alt="TCG Machines">
+    <span>BOM BITCHSLAP APP</span>
+  </div>
+  <button class="ghost small" type="button" data-nav="dashboard">Dashboard</button>
+</header>
+
+<main class="app-shell">
+  <section id="page-dashboard" class="page active">
+    <section class="clean-dashboard-stage">
+      <div class="clean-dashboard-content">
+        <div class="clean-brand">
+          <img src="tcg-logo-transparent.png" alt="TCG Machines">
+          <span>BOMAPP</span>
+        </div>
+
+        <nav class="clean-dashboard-actions" aria-label="BOMAPP dashboard actions">
+          <button class="dash-action primary" type="button" data-action="create-bom">
+            <span class="dash-icon">+</span>
+            <span class="dash-copy"><strong>Create BOM</strong><small>Build a new BOM with multi-level sections</small></span>
+            <span class="dash-chev">›</span>
+          </button>
+
+          <button class="dash-action" type="button" data-nav="update">
+            <span class="dash-icon">↻</span>
+            <span class="dash-copy"><strong>Update BOM</strong><small>Import drafts or SOLIDWORKS BOM CSV</small></span>
+            <span class="dash-chev">›</span>
+          </button>
+
+          <button id="bomUpdateAlertButton" class="dash-alert" type="button" data-nav="alerts">
+            <span class="alert-dot">!</span>
+            <span><strong>BOM Update Needed</strong><small>No active BOM update request</small></span>
+          </button>
+        </nav>
+      </div>
+    </section>
+  </section>
+
+  <section id="page-create" class="page">
+    <section class="page-title">
+      <div>
+        <p class="eyebrow">Create / Edit BOM</p>
+        <h1>Create BOM</h1>
+        <p>Start with a BOM type, then add sections and part lines. Each full BOM can represent a parent assembly, subassembly, SSA, INASS, R&D assembly, or procedure.</p>
+      </div>
+      <button type="button" data-nav="dashboard" class="ghost">Back to Dashboard</button>
+    </section>
+
+    <section class="panel setup-panel">
+      <div class="field-grid">
+        <label>What type of BOM would you like to create?
+          <select id="newBomType">
+            <option value="MA">Main Assembly (MA)</option>
+            <option value="SA">Sub Assembly (SA)</option>
+            <option value="SSA">SSA Assembly (SSA)</option>
+            <option value="INASS">INASS Assembly (INASS)</option>
+            <option value="RNDASS">R&D Assembly (RNDASS)</option>
+            <option value="PROCEDURAL">Procedural BOM</option>
+          </select>
+        </label>
+        <label>BOM / Assembly Number
+          <input id="newBomNumber" placeholder="e.g., SA075, MFG0390, MA-SBX">
+        </label>
+        <label>BOM / Assembly Name
+          <input id="newBomName" placeholder="e.g., Lower Camera Assembly">
+        </label>
+        <label>Impact / SOP action required
+          <select id="newBomImpact">
+            <option value="none">No SOP audit required</option>
+            <option value="required_sop">Required SOP</option>
+            <option value="urgent_process_change">Urgent Process Change</option>
+          </select>
+        </label>
+      </div>
+      <div class="button-row">
+        <button type="button" data-action="add-full-bom">Add This BOM</button>
+        <button type="button" class="purple" data-action="import-solidworks">Import SOLIDWORKS BOM CSV</button>
+        <input id="solidworksFile" class="hidden-file" type="file" accept=".csv,.txt,.tsv">
+      </div>
+    </section>
+
+    <section class="workspace-toolbar panel">
+      <button type="button" data-action="add-empty-bom">Add Another Full BOM Section</button>
+      <button type="button" class="green" data-action="save-draft">Save Draft to Phone/Browser</button>
+      <button type="button" data-action="download-json">Download Editable JSON Draft</button>
+      <button type="button" class="purple" data-action="verify-bom">Verify BOM</button>
+      <button type="button" class="steel" data-action="export-mrp">Export MRPeasy / MRP CSV Pack</button>
+      <button type="button" class="steel" data-action="export-odoo">Export Odoo CSV Pack</button>
+    </section>
+
+    <section id="bomWorkspace" class="bom-workspace"></section>
+    <section id="emptyWorkspace" class="empty-state panel">
+      <h2>No BOM created yet</h2>
+      <p>Pick a BOM type above and hit <strong>Add This BOM</strong>.</p>
+    </section>
+  </section>
+
+  <section id="page-update" class="page">
+    <section class="page-title">
+      <div>
+        <p class="eyebrow">Update / Import</p>
+        <h1>UPDATE BOM</h1>
+        <p>Load a saved draft, import an editable JSON draft, or import a SOLIDWORKS BOM CSV.</p>
+      </div>
+      <button type="button" data-nav="dashboard" class="ghost">Back to Dashboard</button>
+    </section>
+    <section class="dashboard-grid">
+      <article class="panel">
+        <h2>Saved Browser Drafts</h2>
+        <div id="savedDrafts" class="draft-list"></div>
+        <button type="button" data-action="refresh-drafts" class="small">Refresh Drafts</button>
+      </article>
+      <article class="panel">
+        <h2>Import Editable JSON Draft</h2>
+        <p>Use this for drafts downloaded from this app.</p>
+        <input id="jsonDraftFile" type="file" accept=".json">
+      </article>
+      <article class="panel">
+        <h2>Import SOLIDWORKS BOM</h2>
+        <p>Upload a CSV/TXT/TSV from SOLIDWORKS. The app will map Part Number, Description, Qty, and optional image columns into a BOM section.</p>
+        <button type="button" class="purple" data-action="import-solidworks-update">Choose SOLIDWORKS CSV</button>
+        <input id="solidworksFileUpdate" class="hidden-file" type="file" accept=".csv,.txt,.tsv">
+      </article>
+    </section>
+  </section>
+
+  <section id="page-inventory" class="page">
+    <section class="page-title">
+      <div>
+        <p class="eyebrow">Inventory Library</p>
+        <h1>Part Search Setup</h1>
+        <p>Import a CSV with part number, description, quantity per machine, and image/picture columns. This powers the easy prefix search in BOM rows.</p>
+      </div>
+      <button type="button" data-nav="dashboard" class="ghost">Back to Dashboard</button>
+    </section>
+    <section class="panel">
+      <div class="field-grid">
+        <label>Inventory CSV
+          <input id="inventoryFile" type="file" accept=".csv,.txt,.tsv">
+        </label>
+        <label>Search imported inventory
+          <input id="inventorySearch" placeholder="Search by prefix, number, description...">
+        </label>
+      </div>
+      <p class="tiny-note">Accepted headers include: Part Number, Part No., Item, Number, Description, Name, Qty, Quantity per Machine, Picture, Image, Image URL.</p>
+      <div id="inventoryResults" class="inventory-results"></div>
+    </section>
+  </section>
+
+  <section id="page-alerts" class="page">
+    <section class="page-title">
+      <div>
+        <p class="eyebrow">Internal App Alerts</p>
+        <h1>SOP / Inventory / Support Queue</h1>
+        <p>These alerts are created when a BOM requires a new SOP, urgent process change, inventory audit, or support visibility. In static mode, alerts are stored locally; when apps are hosted together, TEAMAPP and SOP Wizard can read the same queue.</p>
+      </div>
+      <button type="button" data-nav="dashboard" class="ghost">Back to Dashboard</button>
+    </section>
+    <section class="panel">
+      <div class="button-row">
+        <button type="button" data-action="export-alerts">Export Alert JSON</button>
+        <button type="button" class="red" data-action="clear-alerts">Clear Local Alerts</button>
+      </div>
+      <div id="alertList" class="alert-list"></div>
+    </section>
+  </section>
+</main>
+
+<datalist id="partSuggestions"></datalist>
+<div id="toast" class="toast" role="status"></div>
+
+<script id="bomapp-inline-app">
+const STORE_KEY = 'tcg-bomapp-drafts-v1';
+const INVENTORY_KEY = 'tcg-bomapp-inventory-v1';
+const ALERT_KEY = 'tcg-internal-alerts-v1';
+
+const BOM_TYPES = {
+  MA:'Main Assembly (MA)',
+  SA:'Sub Assembly (SA)',
+  SSA:'SSA Assembly (SSA)',
+  INASS:'INASS Assembly (INASS)',
+  RNDASS:'R&D Assembly (RNDASS)',
+  PROCEDURAL:'Procedural BOM'
+};
+
+const SECTION_TEMPLATES = [
+  {title:'SSA in Sub Assembly', category:'SSA', children:[{title:'Parts used in SSA', category:'SSA_PARTS'}]},
+  {title:'INASS used in Sub Assembly', category:'INASS', children:[{title:'Parts used in INASS', category:'INASS_PARTS'}]},
+  {title:'FAS used in BOM', category:'FAS', children:[]},
+  {title:'OTS used in BOM', category:'OTS', children:[]},
+  {title:'MFG used in BOM', category:'MFG', children:[]},
+  {title:'Other parts used in BOM', category:'OTHER', children:[]}
+];
+
+const CATEGORY_OPTIONS = ['SSA','SSA_PARTS','INASS','INASS_PARTS','SA','MA','RNDASS','PROCEDURAL','FAS','OTS','MFG','CAB','OTHER','SOLIDWORKS_IMPORT','CUSTOM'];
+
+let workspace = [];
+let inventory = [];
+let currentDraftId = null;
+
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+document.addEventListener('DOMContentLoaded', init);
+
+function init(){
+  inventory = loadJson(INVENTORY_KEY, []);
+  workspace = [];
+  renderCounts();
+  buildPartDatalist();
+  renderInventory();
+
+  document.addEventListener('click', e => {
+    const nav = e.target.closest('[data-nav]');
+    if(nav){ showPage(nav.dataset.nav); return; }
+    const action = e.target.closest('[data-action]');
+    if(action){ handleAction(action.dataset.action, action); }
+  });
+
+  document.addEventListener('change', e => {
+    if(e.target.id === 'inventoryFile') importInventory(e.target.files?.[0]);
+    if(e.target.id === 'jsonDraftFile') importJsonDraft(e.target.files?.[0]);
+    if(e.target.id === 'solidworksFile') importSolidworks(e.target.files?.[0]);
+    if(e.target.id === 'solidworksFileUpdate') importSolidworks(e.target.files?.[0]);
+  });
+
+  document.addEventListener('input', e => {
+    if(e.target.matches('.part-number-input')) handlePartNumberInput(e.target);
+    if(e.target.id === 'inventorySearch') renderInventory(e.target.value);
+  });
+
+  renderDraftList();
+  renderAlerts();
+  updateEmptyState();
+  handleIncomingBomUpdateRequest();
+  toast('BOMAPP loaded.');
+}
+
+function handleAction(action, button){
+  const map = {
+    'create-bom': () => { showPage('create'); if(!workspace.length) focusSetup(); },
+    'add-full-bom': addFullBomFromSetup,
+    'add-empty-bom': () => addBom({type:'SA', number:'', name:'', impact:'none', sections:cloneSections()}),
+    'add-custom-section': () => addCustomSection(button),
+    'add-part-line': () => addPartLine(button),
+    'delete-part-line': () => deletePartLine(button),
+    'add-subsection': () => addSubsection(button),
+    'delete-section': () => deleteSection(button),
+    'delete-bom': () => deleteBom(button),
+    'duplicate-bom': () => duplicateBom(button),
+    'save-draft': saveDraft,
+    'download-json': downloadJsonDraft,
+    'verify-bom': () => verifyWorkspace(true),
+    'export-mrp': exportMRP,
+    'export-odoo': exportOdoo,
+    'refresh-drafts': renderDraftList,
+    'import-solidworks': () => $('#solidworksFile').click(),
+    'import-solidworks-update': () => $('#solidworksFileUpdate').click(),
+    'export-alerts': exportAlerts,
+    'clear-alerts': clearAlerts,
+    'mark-sop-verified': () => markSopVerified(button),
+    'push-inventory-support': () => pushInventorySupport(button),
+    'bom-update-needed-alert': createBomUpdateNeededAlert
+  };
+  if(map[action]) map[action]();
+}
+
+function showPage(name){
+  $$('.page').forEach(p => p.classList.remove('active'));
+  $('#page-' + name)?.classList.add('active');
+  document.body.classList.toggle('dashboard-mode', name === 'dashboard'); document.body.classList.toggle('font-v4', true); document.body.classList.toggle('clean-v5', true);
+  if(name === 'update') renderDraftList();
+  if(name === 'alerts') renderAlerts();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function focusSetup(){ setTimeout(() => $('#newBomNumber')?.focus(), 100); }
+
+function cloneSections(){
+  return SECTION_TEMPLATES.map(sec => ({
+    id: uid('sec'),
+    title: sec.title,
+    category: sec.category,
+    rows: [blankRow()],
+    children: (sec.children||[]).map(child => ({id:uid('sec'), title:child.title, category:child.category, rows:[blankRow()], children:[]}))
+  }));
+}
+
+function blankRow(){
+  return {partNumber:'', description:'', qty:'', type:'', image:''};
+}
+
+function addFullBomFromSetup(){
+  const type = $('#newBomType').value;
+  const number = $('#newBomNumber').value.trim();
+  const name = $('#newBomName').value.trim();
+  const impact = $('#newBomImpact').value;
+  addBom({type, number, name, impact, sections:cloneSections()});
+  $('#newBomNumber').value = '';
+  $('#newBomName').value = '';
+}
+
+function addBom(data){
+  const bom = {
+    id: data.id || uid('bom'),
+    type: data.type || 'SA',
+    number: data.number || '',
+    name: data.name || '',
+    revision: data.revision || 'R00',
+    mainAssembly: data.mainAssembly || '',
+    qtyPerMachine: data.qtyPerMachine || '1',
+    impact: data.impact || 'none',
+    sections: data.sections?.length ? data.sections : cloneSections(),
+    verified: false
+  };
+  workspace.push(bom);
+  renderWorkspace();
+  updateEmptyState();
+  toast('BOM section added.');
+}
+
+function renderWorkspace(){
+  const wrap = $('#bomWorkspace');
+  wrap.innerHTML = workspace.map((bom, index) => bomHtml(bom, index)).join('');
+  restoreValuesFromData();
+}
+
+function bomHtml(bom, index){
+  return `<article class="bom-card" data-bom-id="${bom.id}">
+    <div class="bom-header">
+      <div class="bom-title-row">
+        <div>
+          <span class="bom-type-pill">${escapeHtml(BOM_TYPES[bom.type] || bom.type)}</span>
+          <h2>${escapeHtml(bom.number || 'New BOM')} ${bom.name ? '— ' + escapeHtml(bom.name) : ''}</h2>
+        </div>
+        <div class="button-row">
+          <button class="small ghost" type="button" data-action="duplicate-bom">Duplicate</button>
+          <button class="small red" type="button" data-action="delete-bom">Delete</button>
+        </div>
+      </div>
+      <div class="bom-fields">
+        ${field('BOM Type', selectHtml('bom-type', Object.keys(BOM_TYPES), bom.type))}
+        ${field('BOM / Product Number', inputHtml('bom-number', bom.number, 'e.g., SA075'))}
+        ${field('BOM Name / Description', inputHtml('bom-name', bom.name, 'e.g., Lower Camera Assembly'))}
+        ${field('Revision', inputHtml('bom-revision', bom.revision, 'R00'))}
+        ${field('Main Assembly', inputHtml('bom-main-assembly', bom.mainAssembly, 'SBX / CNV / CHS / OTHER'))}
+        ${field('Qty Per Machine', inputHtml('bom-qty-machine', bom.qtyPerMachine, '1', 'number'))}
+        ${field('SOP / Process Impact', selectHtml('bom-impact', {none:'No SOP audit required', required_sop:'Required SOP', urgent_process_change:'Urgent Process Change'}, bom.impact))}
+      </div>
+    </div>
+    <div class="bom-body">
+      <div class="button-row">
+        <button class="small" type="button" data-action="add-custom-section">Add Custom Section</button>
+      </div>
+      ${(bom.sections||[]).map(sec => sectionHtml(sec, bom.id, 0)).join('')}
+    </div>
+  </article>`;
+}
+
+function sectionHtml(section, bomId, depth=0){
+  return `<section class="section-card" data-section-id="${section.id}" data-depth="${depth}">
+    <div class="section-head">
+      <div class="section-head-left">
+        <input class="section-title-input" value="${escapeAttr(section.title)}" aria-label="Section title">
+        <select class="section-category-select">${CATEGORY_OPTIONS.map(o => `<option value="${o}" ${o===section.category?'selected':''}>${o}</option>`).join('')}</select>
+      </div>
+      <div class="button-row">
+        <button class="small" type="button" data-action="add-part-line">Add Line</button>
+        ${(section.category==='SSA' || section.category==='INASS' || depth===0) ? '<button class="small purple" type="button" data-action="add-subsection">Add Secondary Sub-section</button>' : ''}
+        <button class="small red" type="button" data-action="delete-section">Delete Section</button>
+      </div>
+    </div>
+    <div class="part-table">${(section.rows||[]).map(rowHtml).join('')}</div>
+    <div class="subsections">${(section.children||[]).map(child => sectionHtml(child, bomId, depth+1)).join('')}</div>
+  </section>`;
+}
+
+function rowHtml(row){
+  return `<div class="part-row">
+    ${field('Part #', `<input class="part-number-input" list="partSuggestions" value="${escapeAttr(row.partNumber)}" placeholder="Search prefix / part #" />`)}
+    ${field('Description', `<input class="part-desc-input" value="${escapeAttr(row.description)}" placeholder="Part description" />`)}
+    ${field('Qty / Machine', `<input class="part-qty-input" type="number" step="0.001" min="0" value="${escapeAttr(row.qty)}" placeholder="1" />`)}
+    ${field('Type', `<input class="part-type-input" value="${escapeAttr(row.type)}" placeholder="SA / SSA / FAS / OTS / MFG" />`)}
+    ${field('Picture / Image URL', `<input class="part-image-input" value="${escapeAttr(row.image)}" placeholder="optional image URL" />`)}
+    <button class="icon-remove" type="button" data-action="delete-part-line" aria-label="Delete line">×</button>
+  </div>`;
+}
+
+function field(label, inner){ return `<label>${label}${inner}</label>`; }
+function inputHtml(cls, value, placeholder='', type='text'){ return `<input class="${cls}" type="${type}" value="${escapeAttr(value || '')}" placeholder="${escapeAttr(placeholder)}" />`; }
+function selectHtml(cls, options, value){
+  const entries = Array.isArray(options) ? options.map(o => [o, o]) : Object.entries(options);
+  return `<select class="${cls}">${entries.map(([v,l]) => `<option value="${v}" ${v===value?'selected':''}>${escapeHtml(l)}</option>`).join('')}</select>`;
+}
+
+function syncFromDom(){
+  workspace = $$('.bom-card').map(card => {
+    const get = sel => $(sel, card)?.value?.trim() || '';
+    return {
+      id: card.dataset.bomId,
+      type: get('.bom-type'),
+      number: get('.bom-number'),
+      name: get('.bom-name'),
+      revision: get('.bom-revision'),
+      mainAssembly: get('.bom-main-assembly'),
+      qtyPerMachine: get('.bom-qty-machine'),
+      impact: get('.bom-impact'),
+      verified: false,
+      sections: $$('.bom-body > .section-card', card).map(sec => collectSection(sec))
+    };
+  });
+}
+
+function collectSection(secEl){
+  const directChildren = Array.from(secEl.querySelector(':scope > .subsections')?.children || []);
+  return {
+    id: secEl.dataset.sectionId,
+    title: $('.section-title-input', secEl)?.value || '',
+    category: $('.section-category-select', secEl)?.value || 'CUSTOM',
+    rows: $$('.part-table > .part-row', secEl).map(row => ({
+      partNumber: $('.part-number-input', row)?.value.trim() || '',
+      description: $('.part-desc-input', row)?.value.trim() || '',
+      qty: $('.part-qty-input', row)?.value.trim() || '',
+      type: $('.part-type-input', row)?.value.trim() || '',
+      image: $('.part-image-input', row)?.value.trim() || ''
+    })),
+    children: directChildren.map(child => collectSection(child))
+  };
+}
+
+function restoreValuesFromData(){ /* values are rendered directly */ }
+
+function findClosestIds(button){
+  const bomCard = button.closest('.bom-card');
+  const section = button.closest('.section-card');
+  return {bomId:bomCard?.dataset.bomId, sectionId:section?.dataset.sectionId};
+}
+
+function findSectionById(sections, id){
+  for(const sec of sections){
+    if(sec.id === id) return sec;
+    const child = findSectionById(sec.children||[], id);
+    if(child) return child;
+  }
+  return null;
+}
+
+function addPartLine(button){
+  syncFromDom();
+  const {bomId, sectionId} = findClosestIds(button);
+  const bom = workspace.find(b => b.id === bomId);
+  const sec = findSectionById(bom?.sections || [], sectionId);
+  sec.rows.push(blankRow());
+  renderWorkspace();
+}
+
+function deletePartLine(button){
+  syncFromDom();
+  const {bomId, sectionId} = findClosestIds(button);
+  const rowIndex = Array.from(button.closest('.part-table')?.children || []).indexOf(button.closest('.part-row'));
+  const bom = workspace.find(b => b.id === bomId);
+  const sec = findSectionById(bom?.sections || [], sectionId);
+  if(sec.rows.length <= 1) sec.rows = [blankRow()];
+  else sec.rows.splice(rowIndex, 1);
+  renderWorkspace();
+}
+
+function addSubsection(button){
+  syncFromDom();
+  const {bomId, sectionId} = findClosestIds(button);
+  const bom = workspace.find(b => b.id === bomId);
+  const sec = findSectionById(bom?.sections || [], sectionId);
+  sec.children = sec.children || [];
+  sec.children.push({id:uid('sec'), title:'Secondary Sub-section', category:'CUSTOM', rows:[blankRow()], children:[]});
+  renderWorkspace();
+}
+
+function addCustomSection(button){
+  syncFromDom();
+  const bomId = button.closest('.bom-card')?.dataset.bomId;
+  const bom = workspace.find(b => b.id === bomId);
+  bom.sections.push({id:uid('sec'), title:'Custom Section', category:'CUSTOM', rows:[blankRow()], children:[]});
+  renderWorkspace();
+}
+
+function deleteSection(button){
+  syncFromDom();
+  const {bomId, sectionId} = findClosestIds(button);
+  const bom = workspace.find(b => b.id === bomId);
+  removeSectionById(bom.sections, sectionId);
+  renderWorkspace();
+}
+
+function removeSectionById(sections, id){
+  const i = sections.findIndex(s => s.id === id);
+  if(i >= 0){ sections.splice(i, 1); return true; }
+  for(const sec of sections){ if(removeSectionById(sec.children || [], id)) return true; }
+  return false;
+}
+
+function deleteBom(button){
+  syncFromDom();
+  const id = button.closest('.bom-card')?.dataset.bomId;
+  workspace = workspace.filter(b => b.id !== id);
+  renderWorkspace(); updateEmptyState();
+}
+
+function duplicateBom(button){
+  syncFromDom();
+  const id = button.closest('.bom-card')?.dataset.bomId;
+  const bom = workspace.find(b => b.id === id);
+  const copy = JSON.parse(JSON.stringify(bom));
+  copy.id = uid('bom'); copy.number = copy.number ? copy.number + '-COPY' : '';
+  reIdSections(copy.sections);
+  workspace.push(copy);
+  renderWorkspace();
+}
+
+function reIdSections(sections){ sections.forEach(s => { s.id=uid('sec'); (s.rows||[]).forEach(()=>{}); reIdSections(s.children||[]); }); }
+
+function updateEmptyState(){ $('#emptyWorkspace').style.display = workspace.length ? 'none' : 'block'; }
+
+function saveDraft(){
+  syncFromDom();
+  if(!workspace.length){ toast('Create a BOM before saving.'); return; }
+  const drafts = loadJson(STORE_KEY, {});
+  const id = currentDraftId || uid('draft');
+  currentDraftId = id;
+  drafts[id] = {id, updatedAt:new Date().toISOString(), workspace};
+  localStorage.setItem(STORE_KEY, JSON.stringify(drafts));
+  emitBomAlerts('draft_saved');
+  renderCounts(); renderDraftList();
+  toast('Draft saved to this browser/device.');
+}
+
+function downloadJsonDraft(){
+  syncFromDom();
+  const draft = {exportedAt:new Date().toISOString(), app:'TCG BOMAPP', workspace, inventoryMeta:{records:inventory.length}};
+  downloadFile('tcg-bomapp-draft.json', JSON.stringify(draft,null,2), 'application/json');
+}
+
+function importJsonDraft(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      workspace = data.workspace || [];
+      currentDraftId = data.id || uid('draft');
+      showPage('create'); renderWorkspace(); updateEmptyState();
+      toast('JSON draft imported.');
+    }catch(e){ toast('Could not import JSON draft.'); }
+  };
+  reader.readAsText(file);
+}
+
+function renderDraftList(){
+  const wrap = $('#savedDrafts'); if(!wrap) return;
+  const drafts = Object.values(loadJson(STORE_KEY, {})).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+  wrap.innerHTML = drafts.length ? drafts.map(d => `<div class="draft-card">
+    <strong>${escapeHtml(d.workspace?.[0]?.number || 'Untitled BOM')}</strong>
+    <p class="tiny-note">${escapeHtml(d.workspace?.[0]?.name || '')} · ${new Date(d.updatedAt).toLocaleString()}</p>
+    <div class="button-row"><button class="small" onclick="loadDraft('${d.id}')">Open</button><button class="small red" onclick="deleteDraft('${d.id}')">Delete</button></div>
+  </div>`).join('') : '<p class="tiny-note">No saved drafts yet.</p>';
+}
+
+window.loadDraft = function(id){
+  const d = loadJson(STORE_KEY, {})[id];
+  if(!d) return;
+  currentDraftId = id;
+  workspace = d.workspace || [];
+  showPage('create'); renderWorkspace(); updateEmptyState();
+};
+window.deleteDraft = function(id){
+  const drafts = loadJson(STORE_KEY, {});
+  delete drafts[id];
+  localStorage.setItem(STORE_KEY, JSON.stringify(drafts));
+  renderDraftList(); renderCounts();
+};
+
+function verifyWorkspace(show=true){
+  syncFromDom();
+  const issues = [];
+  workspace.forEach((bom, bi) => {
+    if(!bom.type) issues.push(`BOM ${bi+1}: missing BOM type`);
+    if(!bom.number) issues.push(`BOM ${bi+1}: missing BOM/Product number`);
+    if(!bom.name) issues.push(`BOM ${bi+1}: missing BOM name/description`);
+    eachRow(bom, (row, sec, ri) => {
+      if(row.partNumber || row.description || row.qty){
+        if(!row.partNumber) issues.push(`${bom.number || 'BOM '+(bi+1)} / ${sec.title}: row ${ri+1} missing part number`);
+        if(!row.description) issues.push(`${bom.number || 'BOM '+(bi+1)} / ${sec.title}: row ${ri+1} missing description`);
+        if(!row.qty || Number(row.qty) <= 0) issues.push(`${bom.number || 'BOM '+(bi+1)} / ${sec.title}: row ${ri+1} missing valid qty`);
+      }
+    });
+  });
+  if(show){
+    if(!issues.length) {
+      emitBomAlerts('bom_verified');
+      toast('BOM verified. Ready to export.');
+    } else alert('BOM verification issues:\\n\\n' + issues.join('\\n'));
+  }
+  return issues;
+}
+
+function eachRow(bom, callback){
+  function walk(sec){
+    (sec.rows||[]).forEach((r,i)=>callback(r, sec, i));
+    (sec.children||[]).forEach(walk);
+  }
+  (bom.sections||[]).forEach(walk);
+}
+
+function flattenComponents(){
+  syncFromDom();
+  const rows = [];
+  workspace.forEach(bom => {
+    eachRow(bom, (row, sec) => {
+      if(row.partNumber || row.description || row.qty){
+        rows.push({
+          parentNumber:bom.number,
+          parentName:bom.name,
+          parentType:bom.type,
+          revision:bom.revision,
+          mainAssembly:bom.mainAssembly,
+          section:sec.title,
+          category:sec.category,
+          partNumber:row.partNumber,
+          description:row.description,
+          qty:row.qty,
+          type:row.type || inferType(row.partNumber),
+          image:row.image
+        });
+      }
+    });
+  });
+  return rows;
+}
+
+function exportMRP(){
+  const issues = verifyWorkspace(false);
+  if(issues.length){ alert('Fix verification issues before export:\\n\\n' + issues.join('\\n')); return; }
+  const components = flattenComponents();
+  const parents = workspace.map(b => ({number:b.number, name:b.name, type:b.type}));
+  const uniqueItems = new Map();
+  parents.forEach(p => uniqueItems.set(p.number, {number:p.number, name:p.name, type:p.type}));
+  components.forEach(r => uniqueItems.set(r.partNumber, {number:r.partNumber, name:r.description, type:r.type}));
+  const itemsCsv = toCsv([...uniqueItems.values()].map(item => ({
+    'Product number':item.number,
+    'Name':item.name,
+    'Unit':'pcs',
+    'Type':item.type || inferType(item.number)
+  })));
+  const bomCsv = toCsv(components.map(r => ({
+    'Product number':r.parentNumber,
+    'Part No.':r.partNumber,
+    'Quantity':r.qty,
+    'Notes':`${r.section} | ${r.category} | ${r.description}`
+  })));
+  downloadFile('MRPeasy_01_Items_Create_First.csv', itemsCsv, 'text/csv');
+  setTimeout(()=>downloadFile('MRPeasy_02_BOM_Import_Second.csv', bomCsv, 'text/csv'), 300);
+  emitBomAlerts('mrp_exported');
+  toast('MRPeasy CSV pack downloading: Items first, BOM second.');
+}
+
+function exportOdoo(){
+  const issues = verifyWorkspace(false);
+  if(issues.length){ alert('Fix verification issues before export:\\n\\n' + issues.join('\\n')); return; }
+  const components = flattenComponents();
+  const csv = toCsv(components.map(r => ({
+    'BOM Reference':r.parentNumber,
+    'Product':r.parentName,
+    'Product Internal Reference':r.parentNumber,
+    'Component':r.description,
+    'Component Internal Reference':r.partNumber,
+    'Quantity':r.qty,
+    'Product Unit of Measure':'Units',
+    'BOM Type':'Manufacture this product',
+    'Section':r.section,
+    'Category':r.category,
+    'Main Assembly':r.mainAssembly,
+    'Image / Picture':r.image
+  })));
+  downloadFile('Odoo_BOM_Import.csv', csv, 'text/csv');
+  emitBomAlerts('odoo_exported');
+  toast('Odoo CSV exported.');
+}
+
+function emitBomAlerts(eventType){
+  const alerts = loadAlerts();
+  const now = new Date().toISOString();
+  workspace.forEach(bom => {
+    if(bom.impact === 'required_sop' || bom.impact === 'urgent_process_change'){
+      const id = uid('alert');
+      alerts.unshift({
+        id,
+        source:'BOMAPP',
+        eventType:bom.impact,
+        workflowEvent:eventType,
+        status:'open',
+        severity:bom.impact === 'urgent_process_change' ? 'urgent' : 'required',
+        bomNumber:bom.number,
+        bomName:bom.name,
+        bomType:bom.type,
+        createdAt:now,
+        sopVerified:false,
+        bomVerified:eventType === 'bom_verified' || eventType.includes('exported'),
+        inventoryNotified:false,
+        supportNotified:false,
+        link: location.href.split('#')[0]
+      });
+    }
+  });
+  localStorage.setItem(ALERT_KEY, JSON.stringify(dedupeAlerts(alerts).slice(0,200)));
+  renderCounts(); renderAlerts();
+}
+
+function dedupeAlerts(alerts){
+  const seen = new Set();
+  return alerts.filter(a => {
+    const key = `${a.eventType}|${a.bomNumber}|${a.workflowEvent}`;
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+
+function loadAlerts(){ return loadJson(ALERT_KEY, []); }
+function renderAlerts(){
+  const wrap = $('#alertList'); if(!wrap) return;
+  const alerts = loadAlerts();
+  wrap.innerHTML = alerts.length ? alerts.map(a => `<div class="alert-card ${a.severity || 'required'}">
+    <strong>${escapeHtml(alertDisplayTitle(a))} — ${escapeHtml(a.bomNumber || '')}</strong>
+    <p>${escapeHtml(a.bomName || '')}</p>
+    <p class="tiny-note">Status: ${escapeHtml(a.status)} | SOP verified: ${a.sopVerified ? 'Yes' : 'No'} | Inventory/Support notified: ${a.inventoryNotified && a.supportNotified ? 'Yes' : 'No'}</p>
+    ${a.link ? `<p class="tiny-note">Source link: ${escapeHtml(a.link)}</p>` : ''}
+    <div class="button-row">
+      <button class="small green" data-action="mark-sop-verified" data-alert-id="${a.id}">Mark SOP Verified</button>
+      <button class="small purple" data-action="push-inventory-support" data-alert-id="${a.id}">Push Inventory + Support Alert</button>
+    </div>
+  </div>`).join('') : '<p class="tiny-note">No open alerts yet.</p>';
+}
+
+function alertDisplayTitle(a){
+  if(a.eventType === 'bom_update_needed') return 'BOM UPDATE NEEDED';
+  if(a.eventType === 'inventory_audit_required') return 'INVENTORY AUDIT REQUIRED';
+  if(a.eventType === 'support_visibility_update') return 'SUPPORT VISIBILITY UPDATE';
+  if(a.severity === 'urgent') return 'URGENT PROCESS CHANGE';
+  return 'REQUIRED SOP';
+}
+
+function markSopVerified(button){
+  const id = button.dataset.alertId;
+  const alerts = loadAlerts();
+  const alert = alerts.find(a => a.id === id);
+  if(alert){ alert.sopVerified = true; alert.status = 'sop_verified'; alert.sopVerifiedAt = new Date().toISOString(); }
+  localStorage.setItem(ALERT_KEY, JSON.stringify(alerts));
+  renderAlerts(); renderCounts(); toast('SOP verified alert sent back to BOMAPP queue.');
+}
+
+function pushInventorySupport(button){
+  const id = button.dataset.alertId;
+  const alerts = loadAlerts();
+  const alert = alerts.find(a => a.id === id);
+  if(alert){
+    alert.inventoryNotified = true;
+    alert.supportNotified = true;
+    alert.status = alert.sopVerified ? 'ready_for_inventory_support' : 'waiting_for_sop_verification';
+    alert.inventorySupportNotifiedAt = new Date().toISOString();
+    alerts.unshift({...alert, id:uid('alert'), source:'BOMAPP', eventType:'inventory_audit_required', status:'open', severity:'required'});
+    alerts.unshift({...alert, id:uid('alert'), source:'BOMAPP', eventType:'support_visibility_update', status:'open', severity:'required'});
+  }
+  localStorage.setItem(ALERT_KEY, JSON.stringify(alerts));
+  renderAlerts(); renderCounts(); toast('Inventory and Support notifications queued.');
+}
+
+function exportAlerts(){
+  downloadFile('TCG_Internal_App_Alert_Queue.json', JSON.stringify(loadAlerts(), null, 2), 'application/json');
+}
+function clearAlerts(){
+  if(confirm('Clear all local alerts?')){ localStorage.setItem(ALERT_KEY, '[]'); renderAlerts(); renderCounts(); }
+}
+
+function importInventory(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCsv(reader.result);
+    inventory = rows.map(r => normalizeInventoryRow(r)).filter(r => r.partNumber || r.description);
+    localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
+    buildPartDatalist(); renderInventory(); renderCounts();
+    toast(`Imported ${inventory.length} inventory records.`);
+  };
+  reader.readAsText(file);
+}
+
+function normalizeInventoryRow(r){
+  const pick = names => {
+    for(const n of names){ const key = Object.keys(r).find(k => k.trim().toLowerCase() === n.toLowerCase()); if(key) return r[key]; }
+    return '';
+  };
+  return {
+    partNumber: pick(['Part Number','Part No.','PartNo','Item','Number','Product number','Internal Reference','SKU']),
+    description: pick(['Description','Name','Part Description','Product','Item Description']),
+    qtyPerMachine: pick(['Qty','Quantity','Quantity per Machine','Qty per Machine','QTY']),
+    type: pick(['Type','Category','Prefix']),
+    image: pick(['Picture','Image','Image URL','Photo','Photo URL'])
+  };
+}
+
+function renderInventory(query=''){
+  const wrap = $('#inventoryResults'); if(!wrap) return;
+  const q = query.toLowerCase().trim();
+  const data = inventory.filter(r => !q || [r.partNumber,r.description,r.type].join(' ').toLowerCase().includes(q)).slice(0,100);
+  wrap.innerHTML = data.length ? data.map(r => `<div class="inventory-card">
+    <strong>${escapeHtml(r.partNumber)}</strong> <span class="tiny-note">${escapeHtml(r.type || inferType(r.partNumber))}</span>
+    <p>${escapeHtml(r.description || '')}</p>
+    <p class="tiny-note">Qty/Machine: ${escapeHtml(r.qtyPerMachine || '')} ${r.image ? '| Image: ' + escapeHtml(r.image) : ''}</p>
+  </div>`).join('') : '<p class="tiny-note">No inventory records loaded yet.</p>';
+}
+
+function buildPartDatalist(){
+  const dl = $('#partSuggestions'); if(!dl) return;
+  dl.innerHTML = inventory.slice(0,1000).map(r => `<option value="${escapeAttr(r.partNumber)}">${escapeHtml(r.description || '')}</option>`).join('');
+}
+
+function handlePartNumberInput(input){
+  const value = input.value.trim().toLowerCase();
+  const match = inventory.find(r => r.partNumber.toLowerCase() === value);
+  if(match){
+    const row = input.closest('.part-row');
+    $('.part-desc-input', row).value = match.description || '';
+    $('.part-qty-input', row).value = match.qtyPerMachine || $('.part-qty-input', row).value || '';
+    $('.part-type-input', row).value = match.type || inferType(match.partNumber);
+    $('.part-image-input', row).value = match.image || '';
+  }
+}
+
+function importSolidworks(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCsv(reader.result);
+    const parts = rows.map(r => normalizeInventoryRow(r)).filter(r => r.partNumber || r.description);
+    if(!parts.length){ toast('No part rows found in SOLIDWORKS file.'); return; }
+    const bomNum = $('#newBomNumber')?.value.trim() || 'SW-IMPORT-' + new Date().toISOString().slice(0,10);
+    const bomName = $('#newBomName')?.value.trim() || 'SOLIDWORKS Imported BOM';
+    const bom = {
+      id:uid('bom'), type:$('#newBomType')?.value || 'SA', number:bomNum, name:bomName,
+      revision:'R00', mainAssembly:'', qtyPerMachine:'1', impact:$('#newBomImpact')?.value || 'none',
+      sections:[{id:uid('sec'), title:'SOLIDWORKS Imported Components', category:'SOLIDWORKS_IMPORT', rows:parts.map(p => ({partNumber:p.partNumber, description:p.description, qty:p.qtyPerMachine || '1', type:p.type || inferType(p.partNumber), image:p.image})), children:[]}]
+    };
+    workspace.push(bom);
+    showPage('create'); renderWorkspace(); updateEmptyState();
+    toast(`Imported ${parts.length} SOLIDWORKS part rows.`);
+  };
+  reader.readAsText(file);
+}
+
+function parseCsv(text){
+  const delimiter = text.includes('\t') ? '\t' : (text.includes(';') && !text.includes(',') ? ';' : ',');
+  const lines = text.replace(/\r/g,'').split('\n').filter(l => l.trim());
+  if(!lines.length) return [];
+  const parseLine = line => {
+    const out=[]; let cur=''; let quoted=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch === '"'){
+        if(quoted && line[i+1] === '"'){ cur += '"'; i++; }
+        else quoted = !quoted;
+      } else if(ch === delimiter && !quoted){ out.push(cur.trim()); cur=''; }
+      else cur += ch;
+    }
+    out.push(cur.trim()); return out;
+  };
+  const headers = parseLine(lines[0]).map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const obj = {};
+    headers.forEach((h,i) => obj[h || `Column${i+1}`] = vals[i] || '');
+    return obj;
+  });
+}
+
+function inferType(part=''){
+  const p = String(part).trim().toUpperCase();
+  if(p.startsWith('SA')) return 'SA';
+  if(p.startsWith('SSA')) return 'SSA';
+  if(p.startsWith('INASS')) return 'INASS';
+  if(p.startsWith('MFG')) return 'MFG';
+  if(p.startsWith('FAS')) return 'FAS';
+  if(p.startsWith('OTS')) return 'OTS';
+  if(p.startsWith('CAB')) return 'CAB';
+  return '';
+}
+
+function toCsv(rows){
+  if(!rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  return [headers.map(esc).join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n');
+}
+
+function downloadFile(filename, content, type){
+  const blob = new Blob([content], {type});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function loadJson(key, fallback){
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch(e){ return fallback; }
+}
+
+function renderCounts(){
+  const draftCount = $('#draftCount');
+  const alertCount = $('#alertCount');
+  const inventoryCount = $('#inventoryCount');
+  if(draftCount) draftCount.textContent = Object.keys(loadJson(STORE_KEY, {})).length;
+  if(alertCount) alertCount.textContent = loadAlerts().filter(a => a.status !== 'closed').length;
+  if(inventoryCount) inventoryCount.textContent = loadJson(INVENTORY_KEY, []).length;
+  updateBomAlertButton();
+}
+
+function updatePartSuggestionsFromRow(row){}
+
+function escapeHtml(s=''){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+function escapeAttr(s=''){ return escapeHtml(s).replace(/`/g,'&#096;'); }
+function uid(prefix='id'){ return prefix + '-' + Math.random().toString(36).slice(2,8) + '-' + Date.now().toString(36); }
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+window.TCGAlertBridge = {
+  getAlerts: () => loadAlerts(),
+  clearAlerts,
+  markSopVerified: id => {
+    const alerts = loadAlerts();
+    const a = alerts.find(x => x.id === id);
+    if(a){ a.sopVerified = true; a.status = 'sop_verified'; localStorage.setItem(ALERT_KEY, JSON.stringify(alerts)); }
+  },
+  ALERT_KEY
+};
+
+
+function createBomUpdateNeededAlert(){
+  const alerts = loadAlerts();
+  const existingOpen = alerts.find(a => a.eventType === 'bom_update_needed' && a.status !== 'closed');
+  const alert = {
+    id: uid('alert'),
+    source:'BOMAPP',
+    requestedBy:'BOMAPP dashboard / SOP Wizard reverse link',
+    eventType:'bom_update_needed',
+    workflowEvent:'request_bom_update',
+    status:'open',
+    severity:'urgent',
+    bomNumber:'BOM UPDATE REQUEST',
+    bomName:'BOM update/audit required from SOP or process review',
+    createdAt:new Date().toISOString(),
+    sopVerified:false,
+    bomVerified:false,
+    inventoryNotified:false,
+    supportNotified:false,
+    link:location.href.split('?')[0]
+  };
+  if(!existingOpen) alerts.unshift(alert);
+  localStorage.setItem(ALERT_KEY, JSON.stringify(alerts.slice(0,200)));
+  renderCounts();
+  renderAlerts();
+  showPage('alerts');
+  toast(existingOpen ? 'Open BOM update alert already exists.' : 'BOM update needed alert created.');
+}
+
+function handleIncomingBomUpdateRequest(){
+  const params = new URLSearchParams(location.search);
+  const request = params.get('request') || params.get('alert');
+  if(request !== 'bom-update-needed') return;
+  const sessionKey = 'bomapp-incoming-bom-update-alert-created';
+  if(!sessionStorage.getItem(sessionKey)){
+    sessionStorage.setItem(sessionKey, '1');
+    createBomUpdateNeededAlert();
+  } else {
+    showPage('alerts');
+  }
+}
+
+
+function updateBomAlertButton(){
+  const btn = $('#bomUpdateAlertButton');
+  if(!btn) return;
+  const count = loadAlerts().filter(a => a.eventType === 'bom_update_needed' && a.status !== 'closed').length;
+  btn.classList.toggle('has-alert', count > 0);
+  const small = btn.querySelector('small');
+  if(small) small.textContent = count ? `${count} BOM update request${count === 1 ? '' : 's'} waiting` : 'No active BOM update request';
+  const dot = btn.querySelector('.alert-dot');
+  if(dot) dot.textContent = count ? String(count) : '!';
+}
+
+</script>
+</body>
+</html>
